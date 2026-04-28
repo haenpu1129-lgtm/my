@@ -1,0 +1,909 @@
+/* ============================================================
+   styles.css — 청년 지원 사이트 디자인 (확장판)
+   ============================================================
+   왜 CSS를 별도 파일로 분리했나요?
+   → HTML에 직접 style을 쓰면(인라인 스타일=inline style=라인 안에 넣은 스타일)
+     같은 디자인을 여러 번 반복해서 적어야 합니다.
+     CSS 파일을 분리하면 한 번만 정의해도 모든 페이지/요소에 일괄 적용 가능 →
+     이를 "DRY 원칙(Don't Repeat Yourself=같은 걸 두 번 쓰지 말자)" 이라고 해요.
+
+   이번 확장에서 새로 추가된 부분:
+   1) 다크모드 (Dark Mode=다크 모드=어두운 테마) — 눈의 피로를 줄이는 야간용 테마
+   2) 즐겨찾기(Favorite=페이버릿=좋아하는 것) 별 버튼 스타일
+   3) D-day(디데이=날짜 카운트다운) 배지
+   4) 자가진단 모달(Modal=모달=떠 있는 창) 스타일
+   5) lastChecked(라스트 체크드=마지막 확인 시간) 표시
+   ============================================================ */
+
+/* ====================== CSS 변수 (라이트 모드 기본값) ======================
+   변수(variable=배리어블)란 "값을 담아두는 통".
+   :root(루트=뿌리, 문서 전체)에 변수로 정의해두면
+   나중에 색상 한 번만 바꿔도 사이트 전체 색이 바뀝니다. → 유지보수가 쉬워짐.
+
+   다크모드를 위한 설계:
+   기본값은 라이트 모드, body에 .dark 클래스가 붙으면 변수 값을 덮어씁니다.
+   이를 "테마 토글(Theme Toggle=테마 토글=테마 전환)" 패턴이라고 합니다. */
+:root {
+  --primary: #6c5ce7;          /* 메인 보라색 (청년 = 산뜻한 느낌) */
+  --primary-light: #a29bfe;
+  --accent: #00b894;           /* 포인트 민트색 */
+  --accent-soft: #d4f5ec;
+  --bg: #f7f6fb;               /* 배경 (눈이 편한 연보라) */
+  --card: #ffffff;             /* 카드 배경(흰색) */
+  --text: #2d3436;             /* 본문 글자 (진회색) */
+  --text-soft: #636e72;        /* 부가 설명 글자 (옅은 회색) */
+  --border: #e6e3f1;
+  --shadow: 0 4px 18px rgba(108, 92, 231, 0.10);
+  --radius: 16px;              /* 카드 모서리 둥글기 */
+  --tag-bg: #f1f0f7;           /* 태그 배경 (지역 등) */
+  --modal-overlay: rgba(0, 0, 0, 0.55); /* 모달 뒷배경 */
+  --warning: #e17055;
+  --urgent: #d63031;           /* D-day 임박 경고색 */
+}
+
+/* 다크모드(Dark Mode) 변수 덮어쓰기.
+   왜 .dark를 body에 붙이나요?
+   → JavaScript에서 클래스 하나만 토글(toggle=토글=켜고끄기)하면
+     사이트 전체 색이 한 번에 바뀌기 때문입니다. (성능 + 가독성 모두 우수)
+
+   Before(적용 전): 모든 요소에 일일이 색을 다시 쓴다 → 코드 중복 폭탄
+   After(적용 후) : 변수 값만 바꾸면 끝 → 1줄 수정으로 사이트 전체 변경 */
+body.dark {
+  --primary: #a29bfe;
+  --primary-light: #b5aff5;
+  --accent: #2ed3a8;
+  --accent-soft: #1a3a32;
+  --bg: #15151f;               /* 다크모드 배경 (짙은 남색-회색) */
+  --card: #21212e;             /* 카드 배경 */
+  --text: #ecedee;             /* 밝은 글자 */
+  --text-soft: #a8aeb5;
+  --border: #2f2f3d;
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  --tag-bg: #2a2a38;
+  --modal-overlay: rgba(0, 0, 0, 0.75);
+}
+
+/* * 선택자 = 모든 요소에 적용.
+   margin/padding을 0으로 초기화하는 건 브라우저마다 기본값이 달라
+   디자인이 깨지는 걸 막기 위함. (이걸 "CSS reset=리셋=초기화" 라고 부름) */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* 패딩/테두리 포함해서 크기 계산 → 레이아웃 사고 방지 */
+}
+
+body {
+  /* font-family(폰트 패밀리=글꼴 가족): 여러 글꼴을 ','로 나열,
+     앞에 적은 게 없으면 다음 걸로 넘어가는 "fallback(폴백=대체)" 구조 */
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+               'Malgun Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased; /* 글자 가장자리를 부드럽게 (앤티앨리어싱) */
+  /* 다크모드 전환을 부드럽게 (transition=트랜지션=전환) */
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* 가운데 정렬용 컨테이너.
+   max-width를 두는 이유: 모니터가 커도 글이 한 줄에 너무 길어지면
+   읽기 힘들기 때문에 가독성을 위해 폭을 제한. */
+.container {
+  max-width: 1200px;
+  margin: 0 auto; /* 좌우 자동 = 가운데 정렬 */
+  padding: 0 20px;
+}
+
+/* ====================== 헤더(Hero) ====================== */
+/* hero(히어로)란 보통 페이지 최상단의 큰 시각적 영역을 가리키는 디자인 용어.
+   "주인공" 이라는 영어 단어 그대로, 가장 먼저 눈에 띄는 부분. */
+.hero {
+  background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 50%, #00b894 100%);
+  color: white;
+  padding: 70px 20px 50px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 다크모드일 때는 그라데이션을 좀 더 진하게 → 너무 밝지 않도록 */
+body.dark .hero {
+  background: linear-gradient(135deg, #4a3fa0 0%, #2d1b69 50%, #00755e 100%);
+}
+
+/* ::before 가상 요소(pseudo-element=수도엘리먼트)로 배경 패턴 추가.
+   실제 HTML에는 없는 요소를 CSS로 만들어내는 트릭(요령). */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -10%;
+  width: 120%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px);
+  background-size: 30px 30px;
+  opacity: 0.5;
+  pointer-events: none; /* 클릭 방해 안 함 */
+}
+
+.hero-inner {
+  position: relative; /* z-index 적용을 위해 (가상 요소 위에 올라가도록) */
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 헤더 우측 상단의 액션 버튼들 (다크모드, 자가진단) 영역.
+   absolute(앱솔루트=절대) 포지셔닝으로 우측 상단에 고정. */
+.hero-actions {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px); /* 유리 효과 (glassmorphism=글라스모피즘) */
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.icon-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  background: rgba(255, 255, 255, 0.30);
+}
+
+/* 자가진단 버튼 — 텍스트 포함이라 좀 더 넓게 */
+.quiz-btn {
+  width: auto;
+  padding: 0 16px;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hero-title {
+  font-size: clamp(28px, 5vw, 44px); /* clamp(클램프=고정범위): 최소-기본-최대 크기 자동 조절 → 반응형! */
+  font-weight: 800;
+  margin-bottom: 14px;
+  letter-spacing: -0.02em;
+}
+
+.logo-emoji {
+  display: inline-block;
+  animation: bounce 2.5s ease-in-out infinite; /* 무한 반복되는 통통 튀는 애니메이션 */
+}
+
+/* @keyframes(키프레임): 애니메이션의 단계별 모양을 정의 */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); } /* 위로 8px 이동 */
+}
+
+.hero-subtitle {
+  font-size: clamp(14px, 2vw, 17px);
+  opacity: 0.95;
+  margin-bottom: 18px;
+}
+
+/* 검증 배지(badge=배지=인증 표시).
+   사용자에게 데이터의 신뢰도를 한눈에 보여주기 위한 작은 라벨. */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px); /* 뒤 배경을 살짝 흐리게 (유리 효과 = glassmorphism=글라스모피즘) */
+  border: 1px solid rgba(255,255,255,0.35);
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #fff;
+}
+
+/* ====================== 검색창 ====================== */
+.search-box {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 50px; /* 알약 모양 (pill shape=필 셰이프) */
+  background: rgba(255, 255, 255, 0.98);
+  color: #2d3436; /* 검색창은 항상 진회색 글자 (다크모드여도 검색창 자체는 밝음) */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  /* transition(트랜지션=전환): 속성이 바뀔 때 부드럽게 변하는 효과 */
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.search-box input:focus {
+  outline: none; /* 기본 파란 테두리 제거 */
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+}
+
+/* ====================== 카테고리 섹션 ====================== */
+.category-section {
+  padding: 50px 0 30px;
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+.category-list {
+  /* Flexbox(플렉스박스=유연한 박스 레이아웃) 사용.
+     자식 요소들을 가로로 나열하고, 화면이 좁으면 줄바꿈(flex-wrap)되게. */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.category-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 50px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer; /* 커서가 손가락 모양으로 → 클릭 가능함을 직관적으로 알림 */
+  transition: all 0.2s;
+}
+
+.category-btn:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-2px); /* 살짝 위로 떠오르는 효과 */
+  box-shadow: var(--shadow);
+}
+
+/* 활성화된 카테고리 (현재 선택된 것) */
+.category-btn.active {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(108, 92, 231, 0.30);
+}
+
+.category-btn .cat-icon {
+  font-size: 18px;
+}
+
+/* 카테고리 안의 작은 카운트(예: 즐겨찾기에 5개 등록) 표시 */
+.cat-count {
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-left: 2px;
+}
+.category-btn:not(.active) .cat-count {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ====================== 정책 카드 영역 ====================== */
+.policies-section {
+  padding: 20px 0 60px;
+  min-height: 50vh; /* vh=viewport height=뷰포트 높이의 1% 단위 */
+}
+
+.policies-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.result-count {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 14px;
+}
+
+/* CSS Grid(그리드=격자) 레이아웃.
+   auto-fill + minmax: 카드 최소 너비 280px,
+   화면이 넓으면 자동으로 여러 열로 배치. → 반응형(responsive=리스폰시브) 디자인 핵심. */
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+/* 정책 카드 한 장 */
+.policy-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.policy-card::before {
+  /* 카드 왼쪽에 색깔 띠를 둬서 카테고리별로 시각적 구분 */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--primary);
+}
+
+/* 카테고리별 띠 색상 — 14개 카테고리 모두 색을 분리해서 한눈에 구분 */
+.policy-card[data-category="housing"]::before    { background: #fdcb6e; }
+.policy-card[data-category="job"]::before        { background: #00b894; }
+.policy-card[data-category="finance"]::before    { background: #e17055; }
+.policy-card[data-category="edu"]::before        { background: #6c5ce7; }
+.policy-card[data-category="transport"]::before  { background: #0984e3; }
+.policy-card[data-category="marriage"]::before   { background: #fd79a8; }
+.policy-card[data-category="military"]::before   { background: #2d3436; }
+.policy-card[data-category="agriculture"]::before { background: #55a630; }
+.policy-card[data-category="medical"]::before    { background: #ff6b6b; }
+.policy-card[data-category="food"]::before       { background: #f9ca24; }
+.policy-card[data-category="welfare"]::before    { background: #74b9ff; }
+.policy-card[data-category="regional"]::before   { background: #a29bfe; }
+
+.policy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(108, 92, 231, 0.18);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.card-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.card-category-tag {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.card-region-tag {
+  font-size: 12px;
+  color: var(--text-soft);
+  background: var(--tag-bg);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* ============ 즐겨찾기(Favorite=페이버릿) 별 버튼 ============
+   왜 별(★) 모양?
+   → 전 세계적으로 "북마크/관심 표시"의 보편적 시각 기호.
+     이를 "어포던스(Affordance=어포던스=무엇을 할 수 있는지 직관적으로 보여주는 디자인)"이라고 합니다.
+
+   기본은 빈 별(☆), 클릭하면 노란 별(★)로 변환.
+   상태(state=스테이트=상태값)는 localStorage에 저장 → 페이지 새로고침해도 유지. */
+.favorite-btn {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+  color: #d1d8e0; /* 비활성 상태: 옅은 회색 별 */
+  padding: 0;
+  line-height: 1;
+  transition: transform 0.15s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.2) rotate(8deg);
+  color: #ffd43b;
+}
+
+.favorite-btn.active {
+  color: #fcc419; /* 활성 상태: 진한 노란 별 */
+  /* 활성화될 때 통통 튀는 효과 */
+  animation: starPop 0.4s ease-out;
+}
+
+@keyframes starPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.4) rotate(15deg); }
+  100% { transform: scale(1); }
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 14px;
+  line-height: 1.35;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-grow: 1; /* 카드 높이 맞추기 위해 본문이 남는 공간 채움 */
+}
+
+.card-info-row {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.card-info-label {
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0; /* 레이블 너비가 줄어들지 않게 고정 */
+  min-width: 56px;
+}
+
+.card-info-value {
+  color: var(--text);
+}
+
+/* ============ D-day(디데이) 배지 ============
+   D-day = "Day-day(데이-데이)" 의 줄임말, 군사 용어에서 유래.
+   원래는 노르망디 상륙작전 등 "결행일"을 의미했으나,
+   현재는 "특정 일까지 며칠 남았는가?" 라는 카운트다운 표현으로 정착.
+
+   왜 색상을 3단계로 나누나요?
+   - 평상시: 파랑(여유)
+   - 7일 이내: 주황(서둘러야)
+   - 3일 이내: 빨강 + 깜빡임(긴급) */
+.dday-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e3f2fd;
+  color: #1976d2;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  border: 1px solid #bbdefb;
+}
+
+.dday-badge.warning {
+  background: #fff3e0;
+  color: #f57c00;
+  border-color: #ffe0b2;
+}
+
+.dday-badge.urgent {
+  background: #ffebee;
+  color: var(--urgent);
+  border-color: #ffcdd2;
+  /* 긴급 시 깜빡이는 효과로 시각적 주의 환기 */
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.dday-badge.expired {
+  background: #f5f5f5;
+  color: #9e9e9e;
+  border-color: #e0e0e0;
+  text-decoration: line-through;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.05); }
+}
+
+/* 다크모드 D-day 색상 보정 — 다크 배경에서도 잘 보이도록 */
+body.dark .dday-badge { background: #1a3550; color: #82c8ff; border-color: #2a5577; }
+body.dark .dday-badge.warning { background: #4a3010; color: #ffb74d; border-color: #6a4a20; }
+body.dark .dday-badge.urgent { background: #4a1a1f; color: #ff8a8a; border-color: #6a2a30; }
+
+.card-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: auto; /* 카드 맨 아래에 붙이기 */
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(108, 92, 231, 0.30);
+}
+
+/* 검증 출처 텍스트 — 카드 맨 아래에 작게 표시.
+   왜? 사용자에게 "이 데이터 어디서 가져왔는지" 신뢰도를 주기 위함.
+   소프트웨어 개발에서 "data provenance(데이터 프로비넌스=출처)" 라고 부르는 개념입니다. */
+.card-verified {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-soft);
+  background: #f0fbf5;
+  border: 1px dashed #b9eccd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  line-height: 1.4;
+}
+
+body.dark .card-verified {
+  background: #173228;
+  border-color: #2c5546;
+}
+
+/* lastChecked(라스트 체크드=마지막 확인 시간) 라벨.
+   "이 데이터 언제 마지막으로 확인했나?" 를 보여줌.
+   투명성(transparency=트랜스패런시=투명함) 강화 — 사용자가 데이터 신선도를 직접 확인 가능. */
+.card-checked {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-soft);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* ====================== 빈 상태(empty state) ====================== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-soft);
+}
+
+.empty-emoji {
+  font-size: 56px;
+  margin-bottom: 14px;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+/* ====================== 푸터 ====================== */
+.footer {
+  background: var(--card);
+  padding: 30px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-soft);
+  border-top: 1px solid var(--border);
+}
+
+.footer-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* ====================== 자가진단 모달(Modal=모달=떠 있는 창) ======================
+   모달이란?
+   → 화면 위에 떠올라 다른 부분과의 상호작용을 막고 사용자의 주의를 한 곳에 모으는 창.
+     "모달 다이얼로그(Modal Dialog=모달 다이얼로그)" 의 줄임말.
+     원래는 "이 작업이 끝날 때까지 다른 건 못 한다(modal=모드 전환)"는 의미.
+
+   왜 자가진단 기능?
+   → 정책 85개를 다 읽기 어렵습니다.
+     5개 질문에 답하면 본인에게 맞는 정책만 추려 보여주는 게 훨씬 친절.
+     이를 "퍼소널라이제이션(Personalization=퍼소널라이제이션=개인화)" 이라고 합니다. */
+.quiz-overlay {
+  position: fixed; /* 스크롤해도 화면에 고정 */
+  inset: 0;        /* top/right/bottom/left = 0 (화면 전체 덮음) */
+  background: var(--modal-overlay);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;    /* 다른 요소보다 위에 (스택 순서) */
+  padding: 20px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.quiz-overlay[hidden] {
+  display: none; /* hidden 속성이 있으면 안 보이게 (브라우저 기본 + 명시적 강제) */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.quiz-modal {
+  background: var(--card);
+  color: var(--text);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 32px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.30);
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.quiz-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--text-soft);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.quiz-close:hover {
+  background: var(--bg);
+}
+
+.quiz-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.quiz-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.quiz-progress {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+/* 진행률 바 — Progress Bar(프로그레스 바=진행 막대) */
+.quiz-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.quiz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 3px;
+  transition: width 0.3s ease-out;
+}
+
+.quiz-question {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-option {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.quiz-option:hover {
+  border-color: var(--primary);
+  transform: translateX(4px);
+  background: var(--card);
+}
+
+.quiz-option.selected {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+}
+
+.quiz-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.quiz-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.quiz-actions button:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+
+.quiz-actions .quiz-next {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  border-color: transparent;
+}
+
+.quiz-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 진단 결과 화면 */
+.quiz-result {
+  text-align: center;
+}
+
+.quiz-result-emoji {
+  font-size: 56px;
+  margin-bottom: 12px;
+}
+
+.quiz-result-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.quiz-result-sub {
+  color: var(--text-soft);
+  margin-bottom: 20px;
+}
+
+.quiz-result-list {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: left;
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.quiz-result-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.quiz-result-item:hover {
+  background: var(--card);
+}
+
+/* ====================== 토스트(Toast=토스트=잠깐 떴다 사라지는 알림) ======================
+   왜 토스트?
+   → "즐겨찾기에 추가됐어요" 같은 알림은 모달처럼 막아버리면 거슬립니다.
+     화면 아래에서 살짝 떴다가 자동으로 사라지는 게 사용자 경험(UX=User Experience=유저 익스피리언스)에 좋아요.
+     '토스트(toast)'는 토스터에서 식빵이 톡 튀어나오는 모습에서 유래한 용어. */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text);
+  color: var(--card);
+  padding: 12px 20px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.20);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ====================== 반응형: 모바일 화면 ====================== */
+/* @media(미디어) 쿼리: 화면 크기에 따라 다른 스타일 적용.
+   600px 이하 = 보통 스마트폰 화면. */
+@media (max-width: 600px) {
+  .hero {
+    padding: 60px 20px 40px;
+  }
+  .hero-actions {
+    top: 12px;
+    right: 12px;
+    gap: 6px;
+  }
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+  .quiz-btn {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .category-section {
+    padding: 30px 0 20px;
+  }
+  .policy-grid {
+    grid-template-columns: 1fr; /* 모바일에서는 한 줄에 카드 1개 */
+  }
+  .category-btn {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .quiz-modal {
+    padding: 24px 20px;
+  }
+}

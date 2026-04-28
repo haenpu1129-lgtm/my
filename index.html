@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<!--
+  HTML5 표준 문서 선언
+  - DOCTYPE(독타입) = Document Type Declaration (도큐먼트 타입 디클러레이션)
+  - 브라우저에게 "이 문서는 HTML5 규격이야"라고 알려주는 역할
+  - lang="ko"는 한국어 문서임을 명시 → 검색엔진/스크린리더가 언어를 인식
+-->
+<html lang="ko">
+<head>
+  <!-- meta charset: 문자 인코딩(encoding=엔코딩=부호화) 방식 지정.
+       UTF-8은 전 세계 거의 모든 문자를 표현할 수 있는 표준 인코딩. -->
+  <meta charset="UTF-8" />
+
+  <!-- viewport(뷰포트) = "보이는 화면" 이라는 뜻.
+       모바일에서 화면 너비에 맞춰 자동으로 크기를 조정하도록 설정.
+       이게 없으면 모바일에서 글자가 깨알같이 작아짐. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO(Search Engine Optimization=검색엔진 최적화) 용 메타 태그 -->
+  <meta name="description" content="청년이라면 꼭 알아야 할 주거·일자리·금융·교육 지원 정책을 한눈에 모았어요." />
+
+  <!-- 다크모드 깜빡임 방지 스크립트.
+       왜 head에 inline(인라인=내부)으로 넣었나요?
+       → CSS/JS 파일이 로드되기 전에 <html>에 미리 dark 클래스를 붙여야
+         페이지 로드 직후 흰 화면이 번쩍이는 현상(FOUC=Flash Of Unstyled Content=플래시 오브 언스타일드 컨텐트)을 방지할 수 있음.
+       방어적 프로그래밍(defensive programming=디펜시브 프로그래밍): try/catch로 localStorage 접근 실패도 안전하게. -->
+  <script>
+    try {
+      var savedTheme = localStorage.getItem('youth-theme');
+      if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-prepared-theme', 'dark');
+      }
+    } catch (e) { /* localStorage 차단 환경(예: 시크릿 모드)에서도 무시 */ }
+  </script>
+
+  <title>청년 지원 한눈에 보기 🌱</title>
+
+  <!-- 외부 CSS 파일을 연결.
+       CSS(Cascading Style Sheets=캐스케이딩 스타일 시트) = 위에서 아래로 흐르듯 적용되는 스타일 규칙
+       HTML과 CSS를 분리하면 "구조"와 "디자인"을 따로 관리할 수 있어 유지보수가 쉬움. -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ========== 헤더 영역 (사이트 제목 + 소개 + 액션 버튼들) ========== -->
+  <header class="hero">
+    <!--
+      우측 상단의 액션 버튼들.
+      자가진단(Quiz=퀴즈)과 다크모드(Dark Mode) 토글을 한 곳에 모음.
+      왜? UI 디자인 원칙 중 "F-pattern(에프 패턴=시선의 F자 흐름)"에 따라
+      사용자는 우측 상단에 액션 아이콘이 있을 거라 기대하기 때문.
+    -->
+    <div class="hero-actions">
+      <!-- 자가진단 버튼 — 클릭하면 모달이 열림 -->
+      <button id="quizOpenBtn" class="icon-btn quiz-btn" title="나에게 맞는 정책 찾기" aria-label="자가진단 시작">
+        <span>🎯</span>
+        <span>자가진단</span>
+      </button>
+
+      <!-- 다크모드 토글 버튼 — 클릭하면 라이트/다크 전환.
+           aria-label(에어리아 라벨)은 스크린리더(screen reader=스크린 리더=시각장애 사용자용 음성 안내)용 설명.
+           웹 접근성(Accessibility=액세서빌러티=A11y) 고려 -->
+      <button id="themeToggleBtn" class="icon-btn" title="다크모드 전환" aria-label="다크모드 전환">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+
+    <div class="hero-inner">
+      <h1 class="hero-title">
+        <span class="logo-emoji">🌱</span>
+        청년 지원 한눈에
+      </h1>
+      <p class="hero-subtitle">
+        주거 · 일자리 · 금융 · 교육·문화·복지·교통·결혼·군인·농업 — 흩어져 있던 청년 정책을 한 곳에서 쉽게 확인하세요.
+      </p>
+
+      <!-- 검증 배지: 사용자에게 데이터 신뢰도를 즉시 알리는 시각적 신호 -->
+      <span class="verified-badge">✅ 매일 자정 자동 업데이트 · 공식 자료 기반 검증</span>
+
+      <!-- 검색창 영역 -->
+      <div class="search-box">
+        <!-- input(인풋) = "넣다" 라는 뜻. 사용자에게 입력을 받는 칸.
+             id="searchInput": JS에서 이 요소를 찾을 때 쓰는 고유 식별자(ID=Identifier=아이덴티파이어). -->
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="🔍 정책명, 대상, 혜택으로 검색해 보세요 (예: 월세, 적금, 창업)"
+        />
+      </div>
+    </div>
+  </header>
+
+  <!-- ========== 카테고리 필터 영역 ========== -->
+  <!--
+    section(섹션) = "구역, 부분"이라는 뜻. 의미상 하나의 묶음을 표현.
+    div 대신 section을 쓰는 이유: 시맨틱(semantic=의미적) HTML 원칙에 따라
+    "이 부분은 카테고리 필터다" 라고 의미를 코드로 명시하기 위함.
+  -->
+  <section class="category-section" aria-label="카테고리 필터">
+    <div class="container">
+      <h2 class="section-title">📂 카테고리별로 골라보기</h2>
+      <!-- 실제 카테고리 버튼들은 JS로 자동 생성됩니다. data.js의 CATEGORIES 배열 참고. -->
+      <div class="category-list" id="categoryList"></div>
+    </div>
+  </section>
+
+  <!-- ========== 정책 카드 목록 영역 ========== -->
+  <main class="policies-section">
+    <div class="container">
+      <div class="policies-header">
+        <h2 class="section-title" id="policiesTitle">📋 전체 정책</h2>
+        <!-- 결과 개수를 표시할 곳. JS에서 채워짐. -->
+        <span class="result-count" id="resultCount">0건</span>
+      </div>
+
+      <!-- 정책 카드들이 들어갈 컨테이너. JS에서 동적으로 채워짐.
+           동적(動的)으로 생성한다 = "DOM(Document Object Model=문서 객체 모델)을 자바스크립트로 그린다"는 의미. -->
+      <div class="policy-grid" id="policyGrid"></div>
+
+      <!-- 검색 결과가 없을 때 보여줄 메시지. 평소에는 hidden(숨김) 상태. -->
+      <div class="empty-state" id="emptyState" hidden>
+        <div class="empty-emoji">🔎</div>
+        <h3>검색 결과가 없어요</h3>
+        <p>다른 키워드로 검색하거나 카테고리를 바꿔 보세요.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========== 자가진단 모달(Modal=모달=떠 있는 창) ==========
+       hidden 속성 사용 → 처음에는 숨김, JS가 열어줄 때만 표시.
+       role="dialog" + aria-modal="true": 스크린리더에 "이건 대화상자야"라고 알림 → 접근성 향상 -->
+  <div id="quizOverlay" class="quiz-overlay" role="dialog" aria-modal="true" aria-labelledby="quizTitle" hidden>
+    <div class="quiz-modal">
+      <button id="quizCloseBtn" class="quiz-close" aria-label="닫기">✕</button>
+
+      <!-- 진단 진행 중 화면 — JS가 동적으로 채움 -->
+      <div id="quizContent">
+        <div class="quiz-header">
+          <h2 id="quizTitle">🎯 나에게 맞는 정책 찾기</h2>
+          <p class="quiz-progress" id="quizProgress">질문 1 / 5</p>
+          <div class="quiz-progress-bar">
+            <div class="quiz-progress-fill" id="quizProgressFill" style="width: 20%;"></div>
+          </div>
+        </div>
+        <div id="quizBody"></div>
+        <div class="quiz-actions">
+          <button id="quizPrevBtn" disabled>이전</button>
+          <button id="quizNextBtn" class="quiz-next" disabled>다음</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 토스트(Toast=토스트=잠깐 떴다 사라지는 알림) ========== -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ========== 푸터 (안내문) ========== -->
+  <footer class="footer">
+    <div class="container">
+      <p>
+        ※ 본 사이트는 정보 정리용이며, 정확한 신청 자격·일정은 각 정책의 공식 누리집에서 확인하세요.
+      </p>
+      <p class="footer-sub">
+        데이터 기준: <span id="dataDate">2026년 4월 27일</span> · 매일 자정 자동 업데이트
+        · 고용노동부·국토교통부·금융위원회·서민금융진흥원·문화체육관광부·보건복지부 공식 자료 검증
+      </p>
+    </div>
+  </footer>
+
+  <!--
+    스크립트 파일 로드 순서가 중요!
+    - data.js: 정책 데이터 정의 (변수 POLICIES, CATEGORIES, QUIZ_QUESTIONS)
+    - script.js: data.js의 변수를 사용해서 화면을 그림
+    → 데이터를 먼저 불러와야 화면 코드에서 사용할 수 있기 때문에 이 순서.
+
+    defer(디퍼) = "지연시키다" 라는 뜻.
+    HTML 파싱이 끝난 뒤에 스크립트를 실행 → 화면이 먼저 그려져서 사용자 경험이 좋아짐.
+  -->
+  <script src="data.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
