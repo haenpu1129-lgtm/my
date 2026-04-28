@@ -195,13 +195,29 @@ body.dark .hero {
   background: rgba(255, 255, 255, 0.30);
 }
 
-/* 자가진단 버튼 — 텍스트 포함이라 좀 더 넓게 */
+/* 자가진단 버튼 — 텍스트 포함이라 좀 더 넓게.
+   특이사항: HTML에서 class="icon-btn quiz-btn" 두 개를 같이 쓰는데
+   .icon-btn의 width: 42px 고정값과 충돌이 발생.
+   → 미디어 쿼리에서 .icon-btn의 width가 작아지면 .quiz-btn도 좁아져 글자가 세로로 깨지는 사고 발생.
+   → 해결: 모든 곳에서 width: auto와 white-space: nowrap을 명시해 안전망 구축.
+
+   white-space(화이트 스페이스=공백 처리) nowrap = 줄바꿈 안 함.
+   텍스트가 박스보다 길어도 한 줄로 유지 → 박스가 자동으로 늘어남(width: auto와 짝). */
 .quiz-btn {
   width: auto;
+  min-width: auto; /* 명시적으로 풀어줘 */
   padding: 0 16px;
   gap: 6px;
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 자가진단 버튼 안의 span(이모지 + 텍스트)도 한 줄 유지.
+   :not(.cat-icon) 같은 추가 보호장치는 굳이 필요 없음 — 이 버튼 안에 cat-icon은 안 들어감. */
+.quiz-btn > span {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .hero-title {
@@ -1011,8 +1027,11 @@ body.dark .card-verified {
     font-size: 16px;
   }
   .quiz-btn {
+    /* width: auto 명시 — 위쪽 .icon-btn { width: 40px } 가 덮어쓰는 사고 방지 */
+    width: auto;
     padding: 0 14px;
     font-size: 14px;
+    white-space: nowrap;
   }
   .hero-subtitle {
     font-size: 14px;
@@ -1091,9 +1110,19 @@ body.dark .card-verified {
     font-size: 15px;
   }
   .quiz-btn {
+    /* width: auto 명시 — 위쪽 .icon-btn { width: 38px } 가 덮어쓰는 사고 방지.
+       이게 빠져 있어서 "자가진단" 글자가 38px 동그라미 안에 갇혀
+       자/가/진/단 세로로 쌓이는 버그가 있었음. 그 사고를 방지하는 안전망. */
+    width: auto;
     padding: 0 12px;
     font-size: 13px;
     height: 38px;
+    white-space: nowrap;
+  }
+  /* 모바일에서 자가진단 버튼 안 텍스트 폰트도 좀 더 압축 */
+  .quiz-btn > span:nth-child(2) {
+    font-size: 12px;
+    letter-spacing: -0.02em; /* 글자 사이 간격 살짝 좁혀 가로 폭 절약 */
   }
   /* 카테고리 섹션 */
   .category-section {
